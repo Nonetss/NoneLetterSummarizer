@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import "./DaysList.css"; // Importa el CSS
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 function DaysList() {
   const [days, setDays] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -11,7 +13,7 @@ function DaysList() {
   // Obtener la lista de días desde el backend
   const fetchDays = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/v1/days");
+      const res = await fetch(`${API_URL}/api/v1/days`);
       if (!res.ok) {
         throw new Error("Error al obtener los días");
       }
@@ -27,7 +29,7 @@ function DaysList() {
   // Refrescar newsletters llamando al endpoint GET /api/v1/newsletter/
   const refreshNewsletters = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/v1/newsletter/");
+      const res = await fetch(`${API_URL}/api/v1/newsletter/`);
       if (!res.ok) throw new Error("Error al refrescar newsletters");
       await res.json();
       fetchDays();
@@ -39,12 +41,9 @@ function DaysList() {
   // Generar resumen general del día
   const regenerateDaySummary = async (dayId) => {
     try {
-      const res = await fetch(
-        `http://localhost:8080/api/v1/days/${dayId}/summarize`,
-        {
-          method: "POST",
-        },
-      );
+      const res = await fetch(`${API_URL}/api/v1/days/${dayId}/summarize`, {
+        method: "POST",
+      });
       if (!res.ok)
         throw new Error("Error al generar el resumen general del día");
       const updatedDay = await res.json();

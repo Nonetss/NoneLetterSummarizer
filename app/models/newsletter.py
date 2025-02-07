@@ -32,7 +32,7 @@ class NewsletterDia(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     fecha = Column(DateTime, nullable=False)  # Fecha específica
-    resumen = Column(Text, nullable=True)  # Resumen general del día
+    summary = Column(Text, nullable=True)  # Resumen general del día
 
     # Relación many-to-many con Newsletter
     newsletters = relationship(

@@ -148,7 +148,7 @@ def newsletter_no_leidas():
                         "subject": subject,
                         "body": body.strip(),
                         "received_at": received_at.isoformat(),
-                        "resumen": summary_text,
+                        "summary": summary_text,
                     }
                 )
 

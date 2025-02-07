@@ -63,7 +63,7 @@ def add_newsletter_to_day(newsletter_obj: Newsletter, received_at: datetime):
         db.query(NewsletterDia).filter(NewsletterDia.fecha == day_start).first()
     )
     if not day_record:
-        day_record = NewsletterDia(fecha=day_start, resumen=None)
+        day_record = NewsletterDia(fecha=day_start, summary=None)
         db.add(day_record)
         db.commit()
         db.refresh(day_record)

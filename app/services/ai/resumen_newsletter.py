@@ -92,7 +92,7 @@ def summarize_day(day_id: int, db: Session) -> str:
         )
         summary_text = summary_response.text
 
-        day_record.resumen = summary_text
+        day_record.summary = summary_text
         db.commit()
         logger.info(f"Resumen del día {day_id} guardado en la BD: {summary_text}")
         return summary_text

@@ -46,8 +46,9 @@ La interfaz ofrece una forma intuitiva de navegar por las newsletters organizada
 📌 **Botón para refrescar nuevas newsletters**
 
 _Ejemplo de UI:_  
+![UI Preview](./static/screenshot_movil.jpeg)
+
 ![UI Preview](./static/screenshot_07022025_133748.jpg)
-![UI Preview](./static/screenshot_07022025_134020.jpg)
 
 ---
 

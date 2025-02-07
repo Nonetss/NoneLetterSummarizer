@@ -45,10 +45,12 @@ La interfaz ofrece una forma intuitiva de navegar por las newsletters organizada
 📌 **Modo claro/oscuro**  
 📌 **Botón para refrescar nuevas newsletters**
 
-_Ejemplo de UI:_  
-![UI Preview](./static/screenshot_movil.jpeg)
+_Ejemplo de UI:_
 
-![UI Preview](./static/screenshot_07022025_133748.jpg)
+<div style="display: flex; align-items: center; gap: 10px;">
+    <img src="./static/screenshot_movil.jpeg" alt="UI Preview 1" height="300">
+    <img src="./static/screenshot_07022025_133748.jpg" alt="UI Preview 2" height="300">
+</div>
 
 ---
 

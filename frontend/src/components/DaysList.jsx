@@ -8,7 +8,7 @@ function DaysList() {
   const [error, setError] = useState(null);
   const [theme, setTheme] = useState("dark");
 
-  // Función para obtener la lista de días desde el endpoint
+  // Obtener la lista de días desde el backend
   const fetchDays = async () => {
     try {
       const res = await fetch("http://localhost:8080/api/v1/days");
@@ -24,21 +24,19 @@ function DaysList() {
     }
   };
 
-  // Función para refrescar las newsletters llamando al endpoint GET /api/v1/newsletter/
+  // Refrescar newsletters llamando al endpoint GET /api/v1/newsletter/
   const refreshNewsletters = async () => {
     try {
       const res = await fetch("http://localhost:8080/api/v1/newsletter/");
       if (!res.ok) throw new Error("Error al refrescar newsletters");
-      // Procesamos la respuesta si fuese necesario
       await res.json();
-      // Vuelve a cargar la lista de días para actualizar la información
       fetchDays();
     } catch (err) {
       alert("Error: " + err.message);
     }
   };
 
-  // Función para regenerar el resumen general del día
+  // Generar resumen general del día
   const regenerateDaySummary = async (dayId) => {
     try {
       const res = await fetch(
@@ -52,7 +50,7 @@ function DaysList() {
       const updatedDay = await res.json();
       setDays((prevDays) =>
         prevDays.map((day) =>
-          day.id === dayId ? { ...day, summary: updatedDay.resumen } : day,
+          day.id === dayId ? { ...day, summary: updatedDay.summary } : day,
         ),
       );
     } catch (err) {
@@ -97,13 +95,25 @@ function DaysList() {
             })}
           </h2>
 
-          {/* Desplegable para el resumen general del día */}
+          {/* Resumen general del día con la lista de newsletters recibidas */}
           <details className="day-summary">
-            <summary>Resumen general del día</summary>
+            <summary>📅 Resumen general del día</summary>
             <div className="summary-content">
               <ReactMarkdown>
                 {day.summary ? day.summary : "No generado"}
               </ReactMarkdown>
+
+              <h4>📭 Newsletters recibidas:</h4>
+              <ul>
+                {day.newsletters.map((newsletter) => (
+                  <li key={newsletter.id}>
+                    <strong>{newsletter.subject}</strong> - Recibida el{" "}
+                    {new Date(newsletter.received_at).toLocaleTimeString(
+                      "es-ES",
+                    )}
+                  </li>
+                ))}
+              </ul>
             </div>
           </details>
 
@@ -111,18 +121,21 @@ function DaysList() {
             className="generate-summary"
             onClick={() => regenerateDaySummary(day.id)}
           >
-            Generar resumen general
+            📝 Generar resumen general
           </button>
 
           {/* Desplegable para ver las newsletters del día */}
           <details className="newsletters-details">
-            <summary>Ver newsletters de este día</summary>
+            <summary>📬 Ver newsletters de este día</summary>
             <div className="newsletters-list">
               {day.newsletters.map((newsletter) => (
                 <div key={newsletter.id} className="newsletter-card">
                   <h3>{newsletter.subject}</h3>
+                  <p>
+                    <strong>Autor:</strong> {newsletter.author}
+                  </p>
                   <div>
-                    <strong>Resumen:</strong>
+                    <strong>📌 Resumen de la newsletter:</strong>
                     <ReactMarkdown>
                       {newsletter.summary
                         ? newsletter.summary
@@ -131,7 +144,7 @@ function DaysList() {
                   </div>
                   <p>
                     <small>
-                      Recibido:{" "}
+                      Recibida:{" "}
                       {new Date(newsletter.received_at).toLocaleString("es-ES")}
                     </small>
                   </p>

@@ -1,0 +1,129 @@
+/* Contenedor principal */
+.container {
+  min-height: 100vh;
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+/* Temas claro y oscuro */
+.container.light {
+  background-color: #f2f2f2;
+  color: #333;
+}
+
+.container.dark {
+  background-color: #333;
+  color: #f2f2f2;
+}
+
+/* Encabezado */
+.header {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Botones */
+.theme-toggle {
+  background-color: #333;
+  color: #f2f2f2;
+}
+
+.container.dark .theme-toggle {
+  background-color: #f2f2f2;
+  color: #333;
+}
+
+.refresh {
+  background-color: #28a745;
+  color: #fff;
+}
+
+.generate-summary {
+  background-color: #0070f3;
+  color: #fff;
+  margin: 10px;
+}
+
+/* Tarjeta de cada día */
+.day-card {
+  border: 1px solid #ccc;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+  padding: 20px;
+  border-radius: 8px;
+  background-color: var(--card-bg, #fff);
+}
+
+.container.dark .day-card {
+  background-color: #444;
+}
+
+.day-card h2 {
+  margin-top: 0;
+}
+
+/* Desplegables */
+details {
+  margin-top: 10px;
+}
+
+.day-summary summary,
+.newsletters-details summary {
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1.5rem;
+}
+
+/* Listado de newsletters */
+.newsletters-list {
+  margin-top: 10px;
+}
+
+.newsletter-card {
+  margin-left: 20px;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 5px;
+  padding-bottom: 5px;
+}
+
+/* Responsive: Ajustes para pantallas pequeñas */
+@media (max-width: 600px) {
+  .container {
+    padding: 10px;
+  }
+  .header h1 {
+    font-size: 1.5rem;
+  }
+  .day-card {
+    padding: 8px;
+    margin-bottom: 15px;
+  }
+  button {
+    padding: 6px 10px;
+    font-size: 0.9rem;
+  }
+  .newsletter-card h3 {
+    font-size: 1rem;
+  }
+}

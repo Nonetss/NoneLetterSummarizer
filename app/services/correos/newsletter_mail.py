@@ -10,12 +10,12 @@ from fastapi import HTTPException
 
 from app.core.config import FOLDER
 from app.core.sesion import inicio_sesion
+from app.services.ai.resumen_newsletter import summarize_newsletter
 from app.services.correos.newsletter_db import (
     add_newsletter_to_day,
     save_newsletter_to_db,
 )
 
-# Configura el nivel de logs para ver detalles en caso de errores
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,9 @@ logger = logging.getLogger(__name__)
 def newsletter_no_leidas():
     """
     Conecta a Proton Bridge mediante IMAP, procesa los correos no leídos y
-    guarda su contenido en la base de datos usando las nuevas tablas (Newsletter y NewsletterDia).
+    guarda su contenido en la BD (Newsletter y NewsletterDia).
+    Luego, para cada newsletter guardada, genera automáticamente un resumen
+    usando la función 'summarize_newsletter' (pasándole el contenido) y actualiza la BD.
     Devuelve una lista con los correos procesados.
     """
     try:
@@ -48,91 +50,97 @@ def newsletter_no_leidas():
                 continue
 
             for response_part in msg_data:
-                if isinstance(response_part, tuple):
-                    msg = email.message_from_bytes(response_part[1])
+                if not isinstance(response_part, tuple):
+                    continue
 
-                    # Decodificar el asunto
-                    subject_raw = msg.get("Subject", "Sin Asunto")
-                    subject_tuple = decode_header(subject_raw)[0]
-                    subject = subject_tuple[0]
-                    encoding = subject_tuple[1]
-                    if isinstance(subject, bytes):
-                        subject = subject.decode(encoding or "utf-8", errors="replace")
+                msg = email.message_from_bytes(response_part[1])
 
-                    # Obtener el cuerpo del correo
-                    body = ""
-                    if msg.is_multipart():
-                        for part in msg.walk():
-                            content_type = part.get_content_type()
-                            content_disposition = str(part.get("Content-Disposition"))
-                            # Procesar solo partes de texto que no sean adjuntos
-                            if "attachment" not in content_disposition:
-                                if content_type == "text/plain":
-                                    try:
-                                        body = part.get_payload(decode=True).decode(
-                                            part.get_content_charset() or "utf-8",
-                                            errors="replace",
-                                        )
-                                    except Exception as ex:
-                                        logger.error(
-                                            f"Error decodificando texto plano: {ex}"
-                                        )
-                                    break  # Preferimos texto plano si está disponible
-                                elif content_type == "text/html":
-                                    try:
-                                        html_content = part.get_payload(
-                                            decode=True
-                                        ).decode(
-                                            part.get_content_charset() or "utf-8",
-                                            errors="replace",
-                                        )
-                                    except Exception as ex:
-                                        logger.error(f"Error decodificando HTML: {ex}")
-                                        html_content = ""
-                                    soup = BeautifulSoup(html_content, "html.parser")
-                                    body = soup.get_text(separator="\n", strip=True)
-                                    break
-                    else:
-                        try:
-                            body = msg.get_payload(decode=True).decode(
-                                msg.get_content_charset() or "utf-8", errors="replace"
-                            )
-                        except Exception as ex:
-                            logger.error(f"Error decodificando payload: {ex}")
-                            body = ""
-                        if "<html" in body.lower():
-                            soup = BeautifulSoup(body, "html.parser")
+                # Decodificar el asunto
+                subject_raw = msg.get("Subject", "Sin Asunto")
+                subject_tuple = decode_header(subject_raw)[0]
+                subject = subject_tuple[0]
+                encoding = subject_tuple[1]
+                if isinstance(subject, bytes):
+                    subject = subject.decode(encoding or "utf-8", errors="replace")
+
+                # Extraer el cuerpo del correo (priorizando texto plano sobre HTML)
+                body = ""
+                if msg.is_multipart():
+                    for part in msg.walk():
+                        content_type = part.get_content_type()
+                        content_disposition = str(part.get("Content-Disposition"))
+                        if "attachment" in content_disposition:
+                            continue
+                        if content_type == "text/plain":
+                            try:
+                                body = part.get_payload(decode=True).decode(
+                                    part.get_content_charset() or "utf-8",
+                                    errors="replace",
+                                )
+                            except Exception as ex:
+                                logger.error(f"Error decodificando texto plano: {ex}")
+                            break
+                        elif content_type == "text/html":
+                            try:
+                                html_content = part.get_payload(decode=True).decode(
+                                    part.get_content_charset() or "utf-8",
+                                    errors="replace",
+                                )
+                            except Exception as ex:
+                                logger.error(f"Error decodificando HTML: {ex}")
+                                html_content = ""
+                            soup = BeautifulSoup(html_content, "html.parser")
                             body = soup.get_text(separator="\n", strip=True)
+                            break
+                else:
+                    try:
+                        body = msg.get_payload(decode=True).decode(
+                            msg.get_content_charset() or "utf-8", errors="replace"
+                        )
+                    except Exception as ex:
+                        logger.error(f"Error decodificando payload: {ex}")
+                        body = ""
+                    if "<html" in body.lower():
+                        soup = BeautifulSoup(body, "html.parser")
+                        body = soup.get_text(separator="\n", strip=True)
 
-                    # Obtener la fecha en que se recibió el email (a partir del header "Date")
-                    date_header = msg.get("Date")
-                    if date_header:
-                        try:
-                            received_at = parsedate_to_datetime(date_header)
-                        except Exception as ex:
-                            logger.error(f"Error parseando fecha del email: {ex}")
-                            received_at = datetime.utcnow()
-                    else:
+                # Obtener la fecha a partir del header "Date"
+                date_header = msg.get("Date")
+                if date_header:
+                    try:
+                        received_at = parsedate_to_datetime(date_header)
+                    except Exception as ex:
+                        logger.error(f"Error parseando fecha del email: {ex}")
                         received_at = datetime.utcnow()
+                else:
+                    received_at = datetime.utcnow()
 
-                    email_id = msg_id.decode()
+                email_id = msg_id.decode()
 
-                    # Guardar la newsletter en la base de datos (nueva tabla)
-                    newsletter_obj = save_newsletter_to_db(
-                        email_id, subject, body, received_at
-                    )
+                # Generar el resumen usando la función que ahora recibe el contenido como parámetro
+                summary_text = summarize_newsletter(body)
 
-                    # Agregar la newsletter al resumen diario (NewsletterDia)
-                    add_newsletter_to_day(newsletter_obj, received_at)
+                # Guardar la newsletter en la BD (asegúrate de que save_newsletter_to_db haga commit)
+                newsletter_obj = save_newsletter_to_db(
+                    email_id, subject, body, received_at, summary_text
+                )
 
-                    newsletters_list.append(
-                        {
-                            "id": email_id,
-                            "subject": subject,
-                            "body": body.strip(),
-                            "received_at": received_at.isoformat(),
-                        }
-                    )
+                # Agregar la newsletter al registro diario (NewsletterDia)
+                add_newsletter_to_day(newsletter_obj, received_at)
+
+                logger.info(
+                    f"Resumen generado para el email {email_id}: {summary_text}"
+                )
+
+                newsletters_list.append(
+                    {
+                        "id": email_id,
+                        "subject": subject,
+                        "body": body.strip(),
+                        "received_at": received_at.isoformat(),
+                        "resumen": summary_text,
+                    }
+                )
 
         mail.logout()
         logger.info("Desconectado del servidor IMAP.")
@@ -148,9 +156,10 @@ def newsletter_no_leidas():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Llamada de ejemplo
+# Llamada de ejemplo (para probar de forma independiente)
 if __name__ == "__main__":
     newsletters = newsletter_no_leidas()
     for n in newsletters:
         print(f"Asunto: {n['subject']}")
         print(f"Cuerpo:\n{n['body']}\n{'-'*40}")
+        print(f"Resumen: {n['resumen']}\n{'='*40}\n")

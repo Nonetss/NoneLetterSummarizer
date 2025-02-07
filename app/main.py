@@ -7,20 +7,17 @@ from app.core.database import Base, engine
 
 app = FastAPI()
 
-# Lista de orígenes permitidos (ajusta esto al origen de tu frontend, por ejemplo, http://localhost:3000 si Astro se sirve ahí)
-origins = [
-    "http://localhost:4321",
-    "http://127.0.0.1:4321",
-    # Agrega otros orígenes si es necesario
-]
+# Permitir todos los orígenes
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # Permite peticiones de estos orígenes
+    allow_origins=origins,  # Permite cualquier origen
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Permite todos los métodos (GET, POST, etc.)
+    allow_headers=["*"],  # Permite todos los headers
 )
+
 # Crear la base de datos y las tablas al iniciar la app
 print("🔄 Verificando y creando tablas si no existen...")
 Base.metadata.create_all(bind=engine)

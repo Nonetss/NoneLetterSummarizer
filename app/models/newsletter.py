@@ -19,7 +19,7 @@ class Newsletter(Base):
     subject = Column(String, nullable=False)
     body = Column(Text, nullable=False)
     received_at = Column(DateTime, nullable=False)  # Guardamos la fecha real del email
-    resumen = Column(Text, nullable=True)
+    summary = Column(Text, nullable=True)
 
     # Relación many-to-many con NewsletterDia
     dias = relationship(

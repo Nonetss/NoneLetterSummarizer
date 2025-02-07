@@ -20,7 +20,21 @@ def summarize_newsletter(content: str) -> str:
     :return: Resumen generado o un mensaje de error.
     """
     try:
-        prompt = f"Resumir el siguiente texto en menos de 100 palabras de manera clara y concisa:\n{content}"
+        prompt = f"""
+        Analiza el siguiente texto y realiza un resumen en dos partes:
+
+        1. **Identificación de Puntos Clave**:
+           - Extrae y enumera las ideas principales presentes en el texto.
+           - Identifica los conceptos más relevantes y cualquier conclusión importante.
+
+        2. **Resumen Conciso**:
+           - Redacta un resumen claro y bien estructurado de no más de 100 palabras.
+           - Mantén la coherencia y destaca la información esencial sin perder el contexto.
+
+        Aquí está el texto a analizar:
+
+        {content}
+        """
         summary_response = client.models.generate_content(
             model=MODEL_GEMINI, contents=prompt
         )
@@ -58,10 +72,21 @@ def summarize_day(day_id: int, db: Session) -> str:
             logger.warning(f"No hay contenido en las newsletters para el día {day_id}.")
             return "No hay contenido para resumir en este día."
 
-        prompt = (
-            f"Resumir el siguiente conjunto de newsletters en menos de 100 palabras de manera clara y concisa:\n"
-            f"{combined_content}"
-        )
+        prompt = f"""
+        Analiza el siguiente conjunto de newsletters y realiza un resumen en dos partes:
+
+        1. **Esquema de Puntos Clave**: Enumera los temas principales abordados en las newsletters de manera estructurada. 
+           - Usa un formato claro, como una lista numerada o con viñetas.
+           - Identifica los temas recurrentes o más importantes.
+
+        2. **Desarrollo de los Puntos Clave**: Explica cada punto identificado de forma concisa y clara. 
+           - Proporciona un resumen breve pero informativo de cada tema.
+           - Si hay relación entre los puntos, indícalo.
+
+        Aquí están las newsletters a analizar:
+
+        {combined_content}
+        """
         summary_response = client.models.generate_content(
             model=MODEL_GEMINI, contents=prompt
         )

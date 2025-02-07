@@ -5,7 +5,7 @@ from app.models.newsletter import Newsletter, NewsletterDia
 
 
 def save_newsletter_to_db(
-    email_id: str, subject: str, body: str, received_at: datetime
+    email_id: str, subject: str, body: str, received_at: datetime, summary: str
 ) -> Newsletter:
     """
     Guarda la newsletter en la tabla 'newsletters'. Si ya existe, devuelve el registro existente.
@@ -20,13 +20,33 @@ def save_newsletter_to_db(
         email_id=email_id,
         subject=subject,
         body=body,
-        received_at=received_at,  # Se guarda la fecha real en que se recibió el email
+        received_at=received_at,
+        summary=summary,
     )
     db.add(new_newsletter)
     db.commit()
     db.refresh(new_newsletter)
     db.close()
     return new_newsletter
+
+
+def update_newsletter_summary(email_id: str, summary: str):
+    """
+    Actualiza el campo 'resumen' de la newsletter identificada por email_id.
+    """
+    db = SessionLocal()
+    try:
+        newsletter = (
+            db.query(Newsletter).filter(Newsletter.email_id == email_id).first()
+        )
+        if newsletter:
+            newsletter.resumen = summary
+            db.commit()
+    except Exception as e:
+        db.rollback()
+        raise e
+    finally:
+        db.close()
 
 
 def add_newsletter_to_day(newsletter_obj: Newsletter, received_at: datetime):

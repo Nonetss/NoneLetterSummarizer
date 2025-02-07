@@ -25,6 +25,7 @@ def get_days(db: Session = Depends(get_db)):
                     "subject": n.subject,
                     "summary": n.summary,
                     "received_at": n.received_at.isoformat(),
+                    "author": n.author,
                 }
             )
         result.append(
@@ -56,6 +57,7 @@ def get_day(day_id: int, db: Session = Depends(get_db)):
                 "body": n.body,
                 "summary": n.summary,
                 "received_at": n.received_at.isoformat(),
+                "author": n.author,
             }
         )
     return {
@@ -85,6 +87,7 @@ def generate_day_summary(day_id: int, db: Session = Depends(get_db)):
                 "subject": n.subject,
                 "summary": n.summary,
                 "received_at": n.received_at.isoformat(),
+                "author": n.author,
             }
         )
     return {

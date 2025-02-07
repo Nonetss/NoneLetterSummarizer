@@ -3,8 +3,8 @@ import imaplib
 import logging
 from datetime import datetime
 from email.header import decode_header
-from email.utils import parsedate_to_datetime
-from zoneinfo import ZoneInfo  # Importa ZoneInfo para la conversión
+from email.utils import parseaddr, parsedate_to_datetime
+from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
 from fastapi import HTTPException
@@ -25,8 +25,7 @@ def newsletter_no_leidas():
     """
     Conecta a Proton Bridge mediante IMAP, procesa los correos no leídos y
     guarda su contenido en la BD (Newsletter y NewsletterDia).
-    Luego, para cada newsletter guardada, genera automáticamente un resumen
-    usando la función 'summarize_newsletter' (pasándole el contenido) y actualiza la BD.
+    Luego, genera automáticamente un resumen y actualiza la BD.
     Devuelve una lista con los correos procesados.
     """
     try:
@@ -39,7 +38,7 @@ def newsletter_no_leidas():
 
         newsletter_ids = ids[0].split()
         total_correos = len(newsletter_ids)
-        logger.info(f"Total de correos no leídos son: {total_correos}")
+        logger.info(f"Total de correos no leídos: {total_correos}")
 
         newsletters_list = []
         for msg_id in newsletter_ids:
@@ -63,6 +62,19 @@ def newsletter_no_leidas():
                 encoding = subject_tuple[1]
                 if isinstance(subject, bytes):
                     subject = subject.decode(encoding or "utf-8", errors="replace")
+
+                # Extraer el remitente (autor) del email
+                sender_name, sender_email = parseaddr(msg.get("From", "Desconocido"))
+                if sender_name:
+                    sender_name, sender_encoding = decode_header(sender_name)[0]
+                    if isinstance(sender_name, bytes):
+                        sender_name = sender_name.decode(
+                            sender_encoding or "utf-8", errors="replace"
+                        )
+
+                author = (
+                    f"{sender_name} <{sender_email}>" if sender_email else "Desconocido"
+                )
 
                 # Extraer el cuerpo del correo (priorizando texto plano sobre HTML)
                 body = ""
@@ -130,9 +142,9 @@ def newsletter_no_leidas():
                 # Generar el resumen usando la función que recibe el contenido como parámetro
                 summary_text = summarize_newsletter(body)
 
-                # Guardar la newsletter en la BD (asegúrate de que save_newsletter_to_db haga commit)
+                # Guardar la newsletter en la BD
                 newsletter_obj = save_newsletter_to_db(
-                    email_id, subject, body, received_at, summary_text
+                    email_id, subject, body, received_at, summary_text, author
                 )
 
                 # Agregar la newsletter al registro diario (NewsletterDia)
@@ -149,6 +161,7 @@ def newsletter_no_leidas():
                         "body": body.strip(),
                         "received_at": received_at.isoformat(),
                         "summary": summary_text,
+                        "author": author,  # Incluimos el autor en la respuesta
                     }
                 )
 
@@ -164,12 +177,3 @@ def newsletter_no_leidas():
     except Exception as e:
         logger.error(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-
-# Llamada de ejemplo (para probar de forma independiente)
-if __name__ == "__main__":
-    newsletters = newsletter_no_leidas()
-    for n in newsletters:
-        print(f"Asunto: {n['subject']}")
-        print(f"Cuerpo:\n{n['body']}\n{'-'*40}")
-        print(f"Resumen: {n['resumen']}\n{'='*40}\n")

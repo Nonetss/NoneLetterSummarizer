@@ -13,3 +13,6 @@ PASSWORD = os.getenv("PASSWORD")
 FOLDER = os.getenv("FOLDER")
 
 DATABASE_URL = os.getenv("DATABASE_URL")
+
+GEMINI_KEY = os.getenv("GEMINI_KEY")
+MODEL_GEMINI = os.getenv("MODEL_GEMINI")

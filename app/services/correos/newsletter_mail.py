@@ -4,6 +4,7 @@ import logging
 from datetime import datetime
 from email.header import decode_header
 from email.utils import parsedate_to_datetime
+from zoneinfo import ZoneInfo  # Importa ZoneInfo para la conversión
 
 from bs4 import BeautifulSoup
 from fastapi import HTTPException
@@ -104,20 +105,29 @@ def newsletter_no_leidas():
                         soup = BeautifulSoup(body, "html.parser")
                         body = soup.get_text(separator="\n", strip=True)
 
-                # Obtener la fecha a partir del header "Date"
+                # Obtener la fecha a partir del header "Date" y convertir a hora local de Madrid
                 date_header = msg.get("Date")
                 if date_header:
                     try:
                         received_at = parsedate_to_datetime(date_header)
+                        received_at = received_at.astimezone(ZoneInfo("Europe/Madrid"))
                     except Exception as ex:
                         logger.error(f"Error parseando fecha del email: {ex}")
-                        received_at = datetime.utcnow()
+                        received_at = (
+                            datetime.utcnow()
+                            .replace(tzinfo=ZoneInfo("UTC"))
+                            .astimezone(ZoneInfo("Europe/Madrid"))
+                        )
                 else:
-                    received_at = datetime.utcnow()
+                    received_at = (
+                        datetime.utcnow()
+                        .replace(tzinfo=ZoneInfo("UTC"))
+                        .astimezone(ZoneInfo("Europe/Madrid"))
+                    )
 
                 email_id = msg_id.decode()
 
-                # Generar el resumen usando la función que ahora recibe el contenido como parámetro
+                # Generar el resumen usando la función que recibe el contenido como parámetro
                 summary_text = summarize_newsletter(body)
 
                 # Guardar la newsletter en la BD (asegúrate de que save_newsletter_to_db haga commit)
